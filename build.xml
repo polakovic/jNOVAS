@@ -1,0 +1,237 @@
+
+<project name="novas" basedir=".">
+
+  <property file="${user.home}/cloudmakers.properties" />
+
+	<property name="JDK_HOME" value="C:\Program Files\Java\jdk1.7.0_07" />
+  <property name="MSVS_HOME" value="C:\Program Files\Microsoft Visual Studio 10.0" />
+  <property name="MSSDK_HOME" value="C:\Program Files\Microsoft SDKs\Windows\v7.1" />
+
+  <target name="clean">
+    <delete dir="build" />
+  	<delete file="lib/jnovas.jar"/>
+    <delete file="lib/jnovas_hp.jar"/>
+    <delete file="jnovas.zip"/>
+  </target>
+
+  <target name="build_classes">
+    <mkdir dir="build" />
+    <mkdir dir="lib" />
+    <javac srcdir="src" destdir="build" debug="on" optimize="on" nowarn="true" source="1.5" target="1.5">
+      <include name="**/*.java" />
+    </javac>
+      <copy file="src/eu/cloudmakers/astronometry/JPLEPH.421" todir="build/eu/cloudmakers/astronometry" />
+  </target>
+
+  <target name="build_docs" depends="build_classes">
+    <mkdir dir="doc/api" />
+    <javadoc public="true" sourcepath="src" classpath="build" destdir="doc/api" packagenames="eu.cloudmakers.astronometry.*" />
+  </target>
+
+  <target name="build_win" depends="build_classes">
+    <mkdir dir="build" />
+    <mkdir dir="lib" />
+    
+      <exec dir="." command="javah -d jni -classpath build eu.cloudmakers.astronometry.NOVAS"/>
+
+    <!-- 32 bit -->
+    <exec dir="build" executable="${MSVS_HOME}\VC\bin\cl.exe">
+      <env key="PATH" path="${env.PATH};${MSVS_HOME}\Common7\IDE" />
+      <arg value="/c" />
+      <arg value="/MT" />
+      <arg value="/TP" />
+      <arg value="/Od" />
+      <arg value="/nologo" />
+      <arg value="/I" />
+      <arg value="${MSVS_HOME}\VC\include" />
+      <arg value="/I" />
+      <arg value="${MSSDK_HOME}\Include" />
+      <arg value="/I" />
+      <arg value="${JDK_HOME}\include" />
+      <arg value="/I" />
+      <arg value="${JDK_HOME}\include\win32" />
+      <arg value="/I" />
+      <arg value="..\jni" />
+      <arg value="..\jni\*.c" />
+    </exec>
+    <exec dir="build" executable="${MSVS_HOME}\VC\bin\link.exe">
+      <env key="PATH" path="${env.PATH};${MSVS_HOME}\Common7\IDE" />
+      <arg value="/LIBPATH:${MSSDK_HOME}\Lib" />
+      <arg value="/LIBPATH:${MSVS_HOME}\VC\lib" />
+      <arg value="/OUT:..\lib\novas32.dll" />
+      <arg value="/DLL" />
+      <arg value="/NOLOGO" />
+      <arg value="/MACHINE:X86" />
+      <arg value="*.obj" />
+    </exec>
+    <delete file="build/*.obj" />
+    <delete file="lib/novas32.exp" />
+    <delete file="lib/novas32.lib" />
+    <copy file="lib/novas32.dll" todir="build/eu/cloudmakers/astronometry" />
+    <!-- 64 bit -->
+    <exec dir="build" executable="${MSVS_HOME}\VC\bin\x86_amd64\cl.exe">
+      <env key="PATH" path="${env.PATH};${MSVS_HOME}\Common7\IDE" />
+      <arg value="/c" />
+      <arg value="/MT" />
+      <arg value="/TP" />
+      <arg value="/Od" />
+      <arg value="/nologo" />
+      <arg value="/I" />
+      <arg value="${MSVS_HOME}\VC\include" />
+      <arg value="/I" />
+      <arg value="${MSSDK_HOME}\Include" />
+      <arg value="/I" />
+      <arg value="${JDK_HOME}\include" />
+      <arg value="/I" />
+      <arg value="${JDK_HOME}\include\win32" />
+      <arg value="/I" />
+      <arg value="jni" />
+      <arg value="..\jni\*.c" />
+    </exec>
+    <exec dir="build" executable="${MSVS_HOME}\VC\bin\x86_amd64\link.exe">
+      <env key="PATH" path="${env.PATH};${MSVS_HOME}\Common7\IDE" />
+      <arg value="/LIBPATH:${MSVS_HOME}\VC\lib\amd64" />
+      <arg value="/LIBPATH:${MSSDK_HOME}\Lib\x64" />
+      <arg value="/OUT:..\lib\novas64.dll" />
+      <arg value="/NOLOGO" />
+      <arg value="/DLL" />
+      <arg value="/MACHINE:X64" />
+      <arg value="*.obj" />
+    </exec>
+    <delete file="build/*.obj" />
+    <delete file="lib/novas64.exp" />
+    <delete file="lib/novas64.lib" />
+    <copy file="lib/novas64.dll" todir="build/eu/cloudmakers/astronometry" />
+  </target>
+
+  <target name="build_linux_32" depends="build_classes">
+    <mkdir dir="build" />
+    <mkdir dir="lib" />
+    <javah destdir="jni" classpath="build" class="eu.cloudmakers.astronometry.NOVAS" />
+    <exec dir="build" executable="/usr/bin/g++">
+      <arg value="-I${jdk}/include" />
+      <arg value="-I${jdk}/include/linux" />
+      <arg value="-I../jni" />
+      <arg value="-fPIC" />
+      <arg value="-shared" />
+      <arg value="../jni/jni.c" />
+      <arg value="../jni/eph_manager.c" />
+      <arg value="../jni/novas.c" />
+      <arg value="../jni/novascon.c" />
+      <arg value="../jni/nutation.c" />
+      <arg value="../jni/readeph0.c" />
+      <arg value="../jni/solsys1.c" />
+      <arg value="../jni/solsys3.c" />
+      <arg value="-o" />
+      <arg value="../lib/libnovas32.so" />
+    </exec>
+    <copy file="lib/libnovas32.so" todir="build/eu/cloudmakers/astronometry" />
+  </target>
+
+  <target name="build_linux_64" depends="build_classes">
+    <mkdir dir="build" />
+    <mkdir dir="lib" />
+    <javah destdir="jni" classpath="build" class="eu.cloudmakers.astronometry.NOVAS" />
+    <exec dir="build" executable="/usr/bin/g++">
+      <arg value="-I${jdk}/include" />
+      <arg value="-I${jdk}/include/linux" />
+      <arg value="-I../jni" />
+      <arg value="-fPIC" />
+      <arg value="-shared" />
+      <arg value="../jni/jni.c" />
+      <arg value="../jni/eph_manager.c" />
+      <arg value="../jni/novas.c" />
+      <arg value="../jni/novascon.c" />
+      <arg value="../jni/nutation.c" />
+      <arg value="../jni/readeph0.c" />
+      <arg value="../jni/solsys1.c" />
+      <arg value="../jni/solsys3.c" />
+      <arg value="-o" />
+      <arg value="../lib/libnovas64.so" />
+    </exec>
+    <copy file="lib/libnovas64.so" todir="build/eu/cloudmakers/astronometry" />
+  </target>
+
+  <target name="build_osx" depends="build_classes">
+    <mkdir dir="build" />
+    <mkdir dir="lib" />
+    <javah destdir="jni" classpath="build" class="eu.cloudmakers.astronometry.NOVAS" />
+    <exec dir="build" executable="/usr/bin/g++">
+      <arg value="-isysroot" />
+      <arg value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk" />
+      <arg value="-I/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers" />
+      <arg value="-I/System/Library/Frameworks/JavaVM.framework/Versions/A/Frameworks/JavaNativeFoundation.framework/Headers" />
+      <arg value="-I../jni" />
+      <arg value="-fno-common" />
+      <arg value="-fpascal-strings" />
+      <arg value="-O2" />
+      <arg value="-Wmost" />
+      <arg value="../jni/jni.c" />
+      <arg value="../jni/eph_manager.c" />
+      <arg value="../jni/novas.c" />
+      <arg value="../jni/novascon.c" />
+      <arg value="../jni/nutation.c" />
+      <arg value="../jni/readeph0.c" />
+      <arg value="../jni/solsys1.c" />
+      <arg value="../jni/solsys3.c" />
+      <arg value="-o" />
+      <arg value="../lib/libnovas.jnilib" />
+      <arg value="-framework" />
+      <arg value="Cocoa" />
+      <arg value="-F/System/Library/Frameworks/JavaVM.framework/Versions/A/Frameworks" />
+      <arg value="-framework" />
+      <arg value="JavaNativeFoundation" />
+      <arg value="-arch" />
+      <arg value="i386" />
+      <arg value="-arch" />
+      <arg value="x86_64" />
+      <arg value="-prebind" />
+      <arg value="-dynamiclib" />
+      <arg value="-compatibility_version" />
+      <arg value="1" />
+      <arg value="-current_version" />
+      <arg value="1" />
+    </exec>
+    <copy file="lib/libnovas.jnilib" todir="build/eu/cloudmakers/astronometry" />
+  </target>
+
+  <target name="build_jar" depends="build_classes">
+    <copy file="lib/novas32.dll" todir="build/eu/cloudmakers/astronometry" />
+    <copy file="lib/novas64.dll" todir="build/eu/cloudmakers/astronometry" />
+    <copy file="lib/libnovas32.so" todir="build/eu/cloudmakers/astronometry" />
+    <copy file="lib/libnovas64.so" todir="build/eu/cloudmakers/astronometry" />
+    <copy file="lib/libnovas.jnilib" todir="build/eu/cloudmakers/astronometry" />
+    <jar jarfile="lib/jnovas.jar" basedir="build" includes="**/*.*"  excludes="**/*.421">
+      <manifest>
+        <attribute name="Specification-Title" value="NOVAS3.1 Java Wrapper with JPL ephemerides DE421" />
+        <attribute name="Specification-Version" value="1.2" />
+        <attribute name="Specification-Vendor" value="CloudMakers, s. r. o." />
+        <attribute name="Main-Class" value="CheckOut" />
+      </manifest>
+    </jar>
+    <jar jarfile="lib/jnovas_hp.jar" basedir="build" includes="**/*.*">
+      <manifest>
+        <attribute name="Specification-Title" value="NOVAS3.1 Java Wrapper" />
+        <attribute name="Specification-Version" value="1.2" />
+        <attribute name="Specification-Vendor" value="CloudMakers, s. r. o." />
+        <attribute name="Main-Class" value="CheckOut" />
+      </manifest>
+    </jar>
+    <zip file="jNOVAS.zip" basedir=".">
+      <include name="README.txt" />
+      <include name="LICENSE.txt" />
+      <include name="lib/jnovas.jar" />
+      <include name="lib/jnovas_hp.jar" />
+      <zipfileset dir="doc" prefix="doc" />
+    </zip>
+  </target>
+
+  <target name="upload" depends="build_jar" description="Upload">
+    <ftp server="${ftp.host}" passive="yes" remotedir="www_root" userid="${ftp.login}" password="${ftp.pass}" verbose="yes" binary="yes">
+      <fileset dir=".">
+        <include name="jNOVAS.zip" />
+      </fileset>
+    </ftp>
+  </target>
+
+</project>
